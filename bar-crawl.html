@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Bar Crawl">
+<title>Bar Crawl</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --amber-50: #FAEEDA; --amber-100: #FAC775; --amber-200: #EF9F27; --amber-400: #BA7517; --amber-600: #854F0B;
+  --teal-50: #E1F5EE; --teal-400: #1D9E75; --teal-600: #0F6E56;
+  --coral-50: #FAECE7; --coral-400: #D85A30; --coral-600: #993C1D;
+  --bg: #ffffff; --bg-secondary: #f5f4f0; --bg-tertiary: #EFEDE6;
+  --text: #1a1a18; --text-secondary: #6b6b67;
+  --border: rgba(0,0,0,0.10); --border-hover: rgba(0,0,0,0.18);
+  --radius-md: 8px; --radius-lg: 12px; --radius-xl: 16px;
+  --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1c1e; --bg-secondary: #2c2c2e; --bg-tertiary: #242424;
+    --text: #f2f2f0; --text-secondary: #9a9a96;
+    --border: rgba(255,255,255,0.10); --border-hover: rgba(255,255,255,0.20);
+    --amber-50: rgba(239,159,39,0.15); --teal-50: rgba(29,158,117,0.15); --coral-50: rgba(216,90,48,0.15);
+  }
+}
+
+html, body { height: 100%; background: var(--bg-tertiary); color: var(--text); font-family: 'DM Sans', -apple-system, sans-serif; overflow-x: hidden; }
+.app { display: flex; flex-direction: column; height: 100dvh; }
+
+.app-header { background: var(--bg); border-bottom: 0.5px solid var(--border); padding: calc(var(--safe-top) + 14px) 1.25rem 0; flex-shrink: 0; }
+.header-row { display: flex; align-items: center; gap: 10px; padding-bottom: 14px; }
+.header-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--amber-200); }
+.app-header h1 { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; flex: 1; }
+
+.icloud-btn { background: none; border: 0.5px solid var(--border); border-radius: var(--radius-md); padding: 5px 10px; font-family: 'DM Sans', sans-serif; font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 5px; }
+.icloud-btn:active { background: var(--bg-secondary); }
+.sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+.sync-dot.ok { background: var(--teal-400); }
+.sync-dot.dirty { background: var(--amber-200); }
+
+.tabs { display: flex; }
+.tab-btn { flex: 1; background: none; border: none; padding: 10px 0; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
+.tab-btn.active { color: var(--text); font-weight: 500; border-bottom-color: var(--amber-200); }
+.tab-count { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 10px; margin-left: 4px; background: var(--bg-secondary); color: var(--text-secondary); }
+.tab-btn.active .tab-count { background: var(--amber-50); color: var(--amber-600); }
+@media (prefers-color-scheme: dark) { .tab-btn.active .tab-count { color: var(--amber-100); } }
+
+.scroll-area { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 1.25rem 1rem calc(var(--safe-bottom) + 80px); }
+.top-bar { display: flex; gap: 10px; align-items: center; margin-bottom: 1.1rem; }
+.search-wrap { flex: 1; position: relative; }
+.search-wrap input { width: 100%; padding: 9px 12px 9px 34px; font-family: 'DM Sans', sans-serif; font-size: 15px; background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-md); color: var(--text); outline: none; }
+.search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 15px; color: var(--text-secondary); pointer-events: none; }
+.fab { width: 40px; height: 40px; border-radius: 50%; background: var(--amber-200); border: none; color: white; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.fab:active { background: var(--amber-400); }
+
+.bars-grid { display: flex; flex-direction: column; gap: 12px; }
+.empty-state { text-align: center; padding: 4rem 1rem; color: var(--text-secondary); }
+.empty-state .ei { font-size: 40px; margin-bottom: 12px; display: block; }
+.empty-state p { font-size: 15px; margin-bottom: 5px; color: var(--text); }
+.empty-state small { font-size: 13px; }
+
+.bar-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.photo-wrap { position: relative; }
+.bar-photo { width: 100%; height: 160px; background: var(--bg-secondary); display: flex; align-items: center; justify-content: center; font-size: 40px; overflow: hidden; }
+.bar-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.visited-badge { position: absolute; top: 10px; right: 10px; background: var(--teal-400); color: white; font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 10px; }
+.bar-body { padding: 12px 14px 10px; }
+.bar-name { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 500; margin-bottom: 3px; }
+.bar-area { font-size: 12px; color: var(--text-secondary); margin-bottom: 9px; }
+.bar-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 9px; }
+.tag { font-size: 11px; font-weight: 500; padding: 3px 8px; border-radius: 10px; }
+.tag-vibe { background: var(--teal-50); color: var(--teal-600); }
+.tag-type { background: var(--amber-50); color: var(--amber-600); }
+.tag-price { background: var(--bg-secondary); color: var(--text-secondary); }
+@media (prefers-color-scheme: dark) { .tag-vibe { color: #5DCAA5; } .tag-type { color: var(--amber-100); } }
+.bar-comment { font-size: 12px; color: var(--text-secondary); border-top: 0.5px solid var(--border); padding-top: 8px; margin-top: 6px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.card-actions { display: flex; border-top: 0.5px solid var(--border); }
+.card-btn { flex: 1; padding: 10px 6px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; background: none; border: none; cursor: pointer; color: var(--text-secondary); border-right: 0.5px solid var(--border); }
+.card-btn:last-child { border-right: none; }
+.card-btn:active { background: var(--bg-secondary); }
+.card-btn.mark { color: var(--teal-600); }
+.card-btn.unmark { color: var(--coral-600); }
+.card-btn.del { color: #c0392b; }
+@media (prefers-color-scheme: dark) { .card-btn.mark { color: #5DCAA5; } .card-btn.unmark { color: #F0997B; } }
+
+/* Setup screen */
+.setup-screen { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 300; padding: calc(var(--safe-top) + 2rem) 1.5rem calc(var(--safe-bottom) + 2rem); flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 1rem; }
+.setup-screen.open { display: flex; }
+.setup-icon { font-size: 52px; margin-bottom: 0.25rem; }
+.setup-screen h2 { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 500; }
+.setup-screen p { font-size: 15px; color: var(--text-secondary); line-height: 1.6; max-width: 300px; }
+.setup-steps { background: var(--bg-secondary); border-radius: var(--radius-lg); padding: 1rem 1.25rem; text-align: left; width: 100%; max-width: 320px; }
+.setup-steps ol { padding-left: 1.2rem; }
+.setup-steps li { font-size: 14px; color: var(--text-secondary); padding: 5px 0; line-height: 1.5; }
+.setup-steps li strong { color: var(--text); font-weight: 500; }
+.btn-setup { background: var(--amber-200); color: white; border: none; padding: 14px 28px; border-radius: var(--radius-md); font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 500; cursor: pointer; width: 100%; max-width: 320px; }
+.btn-setup:active { background: var(--amber-400); }
+.btn-skip { background: none; border: none; color: var(--text-secondary); font-family: 'DM Sans', sans-serif; font-size: 14px; cursor: pointer; padding: 8px; }
+
+/* Modal */
+.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: flex-end; justify-content: center; }
+.overlay.open { display: flex; }
+.sheet { background: var(--bg); border-radius: var(--radius-xl) var(--radius-xl) 0 0; width: 100%; max-height: 92dvh; display: flex; flex-direction: column; padding-bottom: var(--safe-bottom); }
+.sheet-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 10px auto 0; flex-shrink: 0; }
+.sheet-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 1.25rem 0; flex-shrink: 0; }
+.sheet-header h2 { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 500; }
+.sheet-close { width: 28px; height: 28px; border-radius: 50%; background: var(--bg-secondary); border: none; color: var(--text-secondary); font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.sheet-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 1rem 1.25rem; }
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: 11px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; font-family: 'DM Sans', sans-serif; font-size: 16px; background: var(--bg-secondary); border: 0.5px solid var(--border); border-radius: var(--radius-md); color: var(--text); outline: none; padding: 10px 12px; -webkit-appearance: none; }
+.form-group textarea { resize: none; min-height: 80px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.photo-upload { border: 1px dashed var(--border-hover); border-radius: var(--radius-md); padding: 18px; text-align: center; cursor: pointer; background: var(--bg-secondary); }
+.photo-upload input { display: none; }
+.photo-upload span { font-size: 13px; color: var(--text-secondary); }
+.photo-preview { width: 100%; max-height: 180px; object-fit: cover; border-radius: var(--radius-md); margin-top: 10px; display: none; }
+.sheet-footer { display: flex; gap: 10px; padding: 10px 1.25rem 12px; border-top: 0.5px solid var(--border); flex-shrink: 0; }
+.btn-primary { flex: 1; background: var(--amber-200); color: white; border: none; padding: 12px; border-radius: var(--radius-md); font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; }
+.btn-primary:active { background: var(--amber-400); }
+.btn-cancel { padding: 12px 16px; background: var(--bg-secondary); border: none; border-radius: var(--radius-md); font-family: 'DM Sans', sans-serif; font-size: 15px; cursor: pointer; color: var(--text-secondary); }
+
+.toast { position: fixed; bottom: calc(var(--safe-bottom) + 20px); left: 50%; transform: translateX(-50%) translateY(10px); background: var(--text); color: var(--bg); font-size: 13px; font-weight: 500; padding: 9px 18px; border-radius: 20px; opacity: 0; transition: all 0.2s; z-index: 500; white-space: nowrap; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="setup-screen" id="setup">
+  <div class="setup-icon">☁️</div>
+  <h2>Link to iCloud</h2>
+  <p>Your bar list saves as a JSON file in your iCloud Drive — backed up automatically, never lost.</p>
+  <div class="setup-steps">
+    <ol>
+      <li>Tap <strong>Link iCloud File</strong> below</li>
+      <li>In the Files picker, go to <strong>iCloud Drive</strong></li>
+      <li>If you have an existing <strong>bar-crawl.json</strong>, tap it to load your data</li>
+      <li>First time? Tap <strong>Cancel</strong> on the picker — you'll be prompted to create a new file instead</li>
+    </ol>
+  </div>
+  <button class="btn-setup" onclick="pickFile()">Link iCloud File</button>
+  <button class="btn-skip" onclick="skipSetup()">Use local storage for now</button>
+</div>
+
+<div class="app">
+  <div class="app-header">
+    <div class="header-row">
+      <div class="header-dot"></div>
+      <h1>Bar Crawl</h1>
+      <button class="icloud-btn" onclick="handleSyncBtn()" id="sync-btn">
+        <span class="sync-dot" id="sync-dot"></span>
+        <span id="sync-label">iCloud</span>
+      </button>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('wishlist')">Want to visit <span class="tab-count" id="wc">0</span></button>
+      <button class="tab-btn" onclick="switchTab('visited')">Been there <span class="tab-count" id="vc">0</span></button>
+    </div>
+  </div>
+  <div class="scroll-area">
+    <div class="top-bar">
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input type="search" id="search" placeholder="Search..." oninput="render()">
+      </div>
+      <button class="fab" onclick="openModal()">+</button>
+    </div>
+    <div class="bars-grid" id="grid"></div>
+    <div id="empty" style="display:none">
+      <div class="empty-state">
+        <span class="ei">🍻</span>
+        <p id="empty-msg">No bars yet</p>
+        <small id="empty-sub">Tap + to add your first bar</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay" onclick="handleOverlay(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <h2 id="modal-title">Add a bar</h2>
+      <button class="sheet-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div class="form-group">
+        <label>Bar name *</label>
+        <input type="text" id="f-name" placeholder="e.g. The Liffey">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Area / neighborhood</label>
+          <input type="text" id="f-area" placeholder="e.g. NE Mpls">
+        </div>
+        <div class="form-group">
+          <label>Price range</label>
+          <select id="f-price">
+            <option value="">—</option>
+            <option>$</option><option>$$</option><option>$$$</option><option>$$$$</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Vibe</label>
+          <select id="f-vibe">
+            <option value="">—</option>
+            <option>Dive bar</option><option>Speakeasy</option><option>Rooftop</option>
+            <option>Cozy / low-key</option><option>Lively / loud</option><option>Upscale / classy</option>
+            <option>Patio / outdoor</option><option>Sports bar energy</option><option>Artsy / indie</option>
+            <option>Neighborhood gem</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Type</label>
+          <select id="f-type">
+            <option value="">—</option>
+            <option>Cocktail bar</option><option>Craft beer bar</option><option>Wine bar</option>
+            <option>Whiskey / spirits</option><option>Sports bar</option><option>Dive bar</option>
+            <option>Brewpub</option><option>Rooftop bar</option><option>Hotel bar</option>
+            <option>Bar + kitchen</option><option>Karaoke bar</option><option>Tiki bar</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Photo</label>
+        <div class="photo-upload" onclick="document.getElementById('f-photo').click()">
+          <input type="file" id="f-photo" accept="image/*" onchange="handlePhoto(event)">
+          <span id="photo-lbl">Tap to upload a photo</span>
+          <img id="photo-prev" class="photo-preview" alt="">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Notes / comments</label>
+        <textarea id="f-comment" placeholder="Heard they do great old fashioneds..."></textarea>
+      </div>
+    </div>
+    <div class="sheet-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveBar()">Save bar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let bars = [];
+let tab = 'wishlist';
+let editId = null;
+let photoData = null;
+let fileHandle = null;
+let useICloud = false;
+
+// ── Boot ──────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  const skipped = localStorage.getItem('barcrawl-skipped');
+  if (skipped || !window.showOpenFilePicker) {
+    skipSetup();
+  } else {
+    document.getElementById('setup').classList.add('open');
+  }
+});
+
+// ── iCloud ────────────────────────────────────────────
+async function pickFile() {
+  try {
+    const [handle] = await window.showOpenFilePicker({
+      types: [{ description: 'Bar Crawl data', accept: { 'application/json': ['.json'] } }],
+      multiple: false
+    });
+    await linkHandle(handle);
+    const file = await handle.getFile();
+    try { bars = JSON.parse(await file.text()); } catch(e) { bars = []; }
+    closeSetup(); setSyncState('ok'); toast('iCloud linked ☁️'); render();
+  } catch(e) {
+    if (e.name === 'AbortError') {
+      // User cancelled picker — offer to create new file
+      await createNewFile();
+    }
+  }
+}
+
+async function createNewFile() {
+  try {
+    const handle = await window.showSaveFilePicker({
+      suggestedName: 'bar-crawl.json',
+      types: [{ description: 'Bar Crawl data', accept: { 'application/json': ['.json'] } }]
+    });
+    await linkHandle(handle);
+    bars = [];
+    await flushToFile();
+    closeSetup(); setSyncState('ok'); toast('New iCloud file created ☁️'); render();
+  } catch(e) { /* user cancelled */ }
+}
+
+async function linkHandle(handle) {
+  fileHandle = handle;
+  useICloud = true;
+  localStorage.removeItem('barcrawl-skipped');
+}
+
+function skipSetup() {
+  localStorage.setItem('barcrawl-skipped', '1');
+  useICloud = false;
+  try { bars = JSON.parse(localStorage.getItem('barcrawl-bars') || '[]'); } catch(e) { bars = []; }
+  closeSetup();
+  setSyncState('local');
+  render();
+}
+
+function closeSetup() { document.getElementById('setup').classList.remove('open'); }
+
+function setSyncState(state) {
+  const dot = document.getElementById('sync-dot');
+  const lbl = document.getElementById('sync-label');
+  dot.className = 'sync-dot';
+  if (state === 'ok')    { dot.classList.add('ok');    lbl.textContent = 'iCloud'; }
+  else if (state === 'dirty') { dot.classList.add('dirty'); lbl.textContent = 'Unsaved'; }
+  else                        { lbl.textContent = 'Local'; }
+}
+
+async function handleSyncBtn() {
+  if (useICloud && fileHandle) {
+    await flushToFile(); toast('Saved to iCloud ☁️');
+  } else if (!useICloud) {
+    localStorage.removeItem('barcrawl-skipped');
+    document.getElementById('setup').classList.add('open');
+  }
+}
+
+async function persist() {
+  if (useICloud && fileHandle) {
+    await flushToFile();
+  } else {
+    localStorage.setItem('barcrawl-bars', JSON.stringify(bars));
+  }
+}
+
+async function flushToFile() {
+  if (!fileHandle) return;
+  try {
+    const w = await fileHandle.createWritable();
+    await w.write(JSON.stringify(bars, null, 2));
+    await w.close();
+    setSyncState('ok');
+  } catch(e) {
+    setSyncState('dirty');
+    toast('Save failed — check iCloud permissions');
+  }
+}
+
+// ── App ───────────────────────────────────────────────
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+function switchTab(t) {
+  tab = t;
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    b.classList.toggle('active', (i===0&&t==='wishlist')||(i===1&&t==='visited'));
+  });
+  render();
+}
+
+function render() {
+  const q = (document.getElementById('search').value||'').toLowerCase();
+  const wishlist = bars.filter(b=>!b.visited);
+  const visited  = bars.filter(b=>b.visited);
+  document.getElementById('wc').textContent = wishlist.length;
+  document.getElementById('vc').textContent = visited.length;
+  const pool = tab==='wishlist' ? wishlist : visited;
+  const list = q ? pool.filter(b=>[b.name,b.area,b.vibe,b.type].some(x=>(x||'').toLowerCase().includes(q))) : pool;
+  const grid = document.getElementById('grid');
+  const empty = document.getElementById('empty');
+  if (!list.length) {
+    grid.innerHTML=''; empty.style.display='block';
+    document.getElementById('empty-msg').textContent = q?'No results':tab==='wishlist'?'No bars on your list yet':'No bars visited yet';
+    document.getElementById('empty-sub').textContent = q?'Try a different search':tab==='wishlist'?'Tap + to start your crawl':'Mark bars as visited to see them here';
+    return;
+  }
+  empty.style.display='none';
+  grid.innerHTML = list.map(b=>`
+    <div class="bar-card">
+      <div class="photo-wrap">
+        <div class="bar-photo">${b.photo?`<img src="${b.photo}" alt="${b.name}">`:'🍻'}</div>
+        ${b.visited?'<span class="visited-badge">Been there</span>':''}
+      </div>
+      <div class="bar-body">
+        <div class="bar-name">${b.name||'Unnamed'}</div>
+        ${b.area?`<div class="bar-area">📍 ${b.area}</div>`:''}
+        <div class="bar-tags">
+          ${b.vibe?`<span class="tag tag-vibe">${b.vibe}</span>`:''}
+          ${b.type?`<span class="tag tag-type">${b.type}</span>`:''}
+          ${b.price?`<span class="tag tag-price">${b.price}</span>`:''}
+        </div>
+        ${b.comment?`<div class="bar-comment">${b.comment}</div>`:''}
+      </div>
+      <div class="card-actions">
+        ${!b.visited
+          ?`<button class="card-btn mark"   onclick="markVisited('${b.id}')">✓ Been here</button>`
+          :`<button class="card-btn unmark" onclick="markUnvisit('${b.id}')">↩ Move back</button>`}
+        <button class="card-btn"     onclick="openEdit('${b.id}')">Edit</button>
+        <button class="card-btn del" onclick="del('${b.id}')">Remove</button>
+      </div>
+    </div>`).join('');
+}
+
+function openModal(id) {
+  editId=id||null; photoData=null;
+  const b=id?bars.find(x=>x.id===id):null;
+  document.getElementById('modal-title').textContent=b?'Edit bar':'Add a bar';
+  document.getElementById('f-name').value=b?.name||'';
+  document.getElementById('f-area').value=b?.area||'';
+  document.getElementById('f-price').value=b?.price||'';
+  document.getElementById('f-vibe').value=b?.vibe||'';
+  document.getElementById('f-type').value=b?.type||'';
+  document.getElementById('f-comment').value=b?.comment||'';
+  const prev=document.getElementById('photo-prev');
+  const lbl=document.getElementById('photo-lbl');
+  if (b?.photo) { prev.src=b.photo; prev.style.display='block'; lbl.textContent='Tap to change photo'; photoData=b.photo; }
+  else { prev.style.display='none'; lbl.textContent='Tap to upload a photo'; }
+  document.getElementById('overlay').classList.add('open');
+}
+function openEdit(id){openModal(id);}
+function closeModal(){document.getElementById('overlay').classList.remove('open');editId=null;photoData=null;}
+function handleOverlay(e){if(e.target===document.getElementById('overlay'))closeModal();}
+
+function handlePhoto(e){
+  const file=e.target.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    photoData=ev.target.result;
+    const prev=document.getElementById('photo-prev');
+    prev.src=photoData; prev.style.display='block';
+    document.getElementById('photo-lbl').textContent='Tap to change photo';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveBar(){
+  const name=document.getElementById('f-name').value.trim();
+  if(!name){document.getElementById('f-name').focus();return;}
+  const existing=editId?bars.find(b=>b.id===editId):null;
+  const data={
+    id:editId||uid(), name,
+    area:document.getElementById('f-area').value.trim(),
+    price:document.getElementById('f-price').value,
+    vibe:document.getElementById('f-vibe').value,
+    type:document.getElementById('f-type').value,
+    comment:document.getElementById('f-comment').value.trim(),
+    photo:photoData,
+    visited:existing?.visited||false,
+    createdAt:existing?.createdAt||Date.now()
+  };
+  if(editId){bars=bars.map(b=>b.id===editId?data:b);toast('Bar updated');}
+  else{bars.unshift(data);toast('Added to your list 🍺');}
+  await persist(); closeModal(); render();
+}
+
+async function markVisited(id){bars=bars.map(b=>b.id===id?{...b,visited:true}:b);await persist();render();toast('Marked as visited 🍻');}
+async function markUnvisit(id){bars=bars.map(b=>b.id===id?{...b,visited:false}:b);await persist();render();toast('Moved back to want-to-visit');}
+async function del(id){
+  if(!confirm('Remove this bar?'))return;
+  bars=bars.filter(b=>b.id!==id);await persist();render();toast('Removed');
+}
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+</script>
+</body>
+</html>
